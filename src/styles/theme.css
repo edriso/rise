@@ -1,0 +1,396 @@
+/* Rise theme and layout — a sunrise you can hear.
+   Ported faithfully from the prototype: night→dawn sky interpolated by an
+   intensity value, a glowing sun that rises and brightens, Fraunces serif for
+   the warm display type and Hanken Grotesk for UI.
+
+   ⚠️ Animation gotcha (kept fixed): never animate opacity from 0 with
+   animation-fill-mode: both for entrances — in some webview/capture contexts it
+   freezes at frame 0 and the element is stuck invisible (this once hid the whole
+   setup screen). Base state is opacity: 1; entrances animate only transform. */
+@import 'tailwindcss';
+
+@theme {
+  --color-night: #161430;
+  --color-accent: #f6a35c;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-ui: 'Hanken Grotesk', system-ui, sans-serif;
+}
+
+:root {
+  --accent: #f6a35c;
+  --display: 'Fraunces', Georgia, serif;
+  --ui: 'Hanken Grotesk', system-ui, sans-serif;
+  /* night */
+  --night-top: #161430;
+  --night-mid: #1d1a3a;
+  --night-bot: #25224a;
+  /* dawn */
+  --dawn-top: #2a2350;
+  --dawn-mid: #c96f5a;
+  --dawn-bot: #f6b06a;
+  --ink: #f4eee6;
+  --dim: #c5bcd4;
+  --faint: #8d86a6;
+  --surface: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  background: linear-gradient(180deg, var(--night-top), var(--night-mid) 45%, var(--night-bot));
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+::selection {
+  background: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+button {
+  font-family: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.ri-app {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  transition: background 1.2s ease;
+}
+
+/* Sky / sun */
+.ri-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.ri-sun {
+  position: absolute;
+  left: 50%;
+  bottom: 26%;
+  width: 170px;
+  height: 170px;
+  margin-left: -85px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 45%,
+    #fff6e0,
+    var(--accent) 60%,
+    color-mix(in oklab, var(--accent) 60%, transparent)
+  );
+  box-shadow: 0 0 90px 30px color-mix(in oklab, var(--accent) 55%, transparent);
+  transition:
+    transform 1.4s cubic-bezier(0.25, 0.8, 0.3, 1),
+    opacity 1.4s ease;
+}
+.ri-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 140%;
+  height: 60%;
+  margin-left: -70%;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    color-mix(in oklab, var(--accent) 45%, transparent),
+    transparent 70%
+  );
+  transition: opacity 1.4s ease;
+}
+
+.ri-stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+}
+.ri-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.ri-mark {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.ri-mark-sun {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #fff6e0, var(--accent));
+  box-shadow: 0 0 24px color-mix(in oklab, var(--accent) 60%, transparent);
+}
+
+.ri-title {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(40px, 11vw, 60px);
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  line-height: 1;
+}
+.ri-sub {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dim);
+  margin: 0 0 34px;
+  max-width: 360px;
+  text-wrap: pretty;
+}
+
+.ri-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+.ri-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: start;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.1s;
+}
+.ri-choice:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, var(--line));
+  background: rgba(255, 255, 255, 0.11);
+}
+.ri-choice-h {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 20px;
+}
+.ri-choice-s {
+  font-size: 13.5px;
+  color: var(--dim);
+  line-height: 1.45;
+}
+
+.ri-stat {
+  margin-top: 26px;
+  font-size: 13.5px;
+  color: var(--faint);
+}
+.ri-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--faint);
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.ri-moon {
+  font-size: 44px;
+  margin-bottom: 18px;
+  opacity: 0.85;
+}
+.ri-rest-label {
+  font-size: 15px;
+  color: var(--dim);
+  margin: 0 0 8px;
+}
+.ri-rest-time {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 64px;
+  letter-spacing: 0.01em;
+  margin-bottom: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ri-row {
+  display: flex;
+  gap: 10px;
+}
+.ri-btn {
+  padding: 13px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s;
+}
+.ri-btn:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, var(--line));
+}
+.ri-btn-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--faint);
+}
+
+/* Calling */
+.ri-calling {
+  gap: 0;
+}
+.ri-call-bubble {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1.3;
+  max-width: 420px;
+  margin-bottom: 44px;
+  text-wrap: pretty;
+  min-height: 84px;
+  /* opacity base is 1; only transform animates (see gotcha note above). */
+  animation: rifadein 1s ease;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.25);
+}
+@keyframes rifadein {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.ri-rise {
+  position: relative;
+  overflow: hidden;
+  width: 240px;
+  height: 64px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  margin-bottom: 18px;
+}
+.ri-rise-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: var(--accent);
+  transition: transform 0.05s linear;
+}
+.ri-rise-label {
+  position: relative;
+  z-index: 1;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 18px;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+}
+
+.ri-link {
+  background: rgba(20, 16, 30, 0.32);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+.ri-link:hover {
+  color: #fff;
+  background: rgba(20, 16, 30, 0.45);
+}
+
+.ri-cta {
+  margin-top: 6px;
+  padding: 16px 32px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--accent);
+  color: #2a1c10;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 17px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.28),
+    0 0 0 6px rgba(255, 255, 255, 0.08);
+}
+
+.ri-tap {
+  transition: transform 0.1s ease;
+}
+.ri-tap:active {
+  transform: scale(0.97);
+}
+@keyframes rifade {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: none;
+  }
+}
+/* Entrance: transform only, opacity stays 1 (the gotcha fix). */
+.ri-fade {
+  animation: rifade 0.6s ease;
+}
+
+/* The 'up' celebration warms the sky fully. */
+.ri-app[data-phase='up'] {
+  background: linear-gradient(
+    180deg,
+    var(--dawn-top),
+    var(--dawn-mid) 45%,
+    var(--dawn-bot)
+  ) !important;
+}
+.ri-app[data-phase='up'] .ri-sub,
+.ri-app[data-phase='calling'] .ri-call-bubble {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
